@@ -1,7 +1,8 @@
 {
     "appKeys": {},
     "capabilities": [
-        ""
+        "location",
+        "configurable"
     ],
     "companyName": "jouni.hartikainen@iki.fi",
     "longName": "FMI Observations",

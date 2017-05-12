@@ -1,82 +1,46 @@
 var UI = require('ui');
-var Vector2 = require('vector2');
+var ajax = require('ajax');
+
+var locationOptions = { "timeout": 30000, "maximumAge": 5 * 60 * 1000, "enableHighAccuracy": true };
 
 var main = new UI.Card({
-  title: 'Pebble.js',
-  icon: 'images/menu_icon.png',
-  subtitle: 'Hello World!',
-  body: 'Press any button.',
-  subtitleColor: 'indigo', // Named colors
-  bodyColor: '#9a0036' // Hex colors
+  title: 'Weather',
+  icon: 'images/weather.png',
+  body: 'Getting location..',
 });
 
 main.show();
+navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 
-main.on('click', 'up', function(e) {
-  var menu = new UI.Menu({
-    sections: [{
-      items: [{
-        title: 'Pebble.js',
-        icon: 'images/menu_icon.png',
-        subtitle: 'Can do Menus'
-      }, {
-        title: 'Second Item',
-        subtitle: 'Subtitle Text'
-      }, {
-        title: 'Third Item',
-      }, {
-        title: 'Fourth Item',
-      }]
-    }]
-  });
-  menu.on('select', function(e) {
-    console.log('Selected item #' + e.itemIndex + ' of section #' + e.sectionIndex);
-    console.log('The item is titled "' + e.item.title + '"');
-  });
-  menu.show();
-});
+function locationError(error) {
+  main.body('Failed to acquire location');
+  console.warn('Location error (' + error.code + '): ' + error.message);
+}
 
-main.on('click', 'select', function(e) {
-  var wind = new UI.Window({
-    backgroundColor: 'black'
-  });
-  var radial = new UI.Radial({
-    size: new Vector2(140, 140),
-    angle: 0,
-    angle2: 300,
-    radius: 20,
-    backgroundColor: 'cyan',
-    borderColor: 'celeste',
-    borderWidth: 1,
-  });
-  var textfield = new UI.Text({
-    size: new Vector2(140, 60),
-    font: 'gothic-24-bold',
-    text: 'Dynamic\nWindow',
-    textAlign: 'center'
-  });
-  var windSize = wind.size();
-  // Center the radial in the window
-  var radialPos = radial.position()
-      .addSelf(windSize)
-      .subSelf(radial.size())
-      .multiplyScalar(0.5);
-  radial.position(radialPos);
-  // Center the textfield in the window
-  var textfieldPos = textfield.position()
-      .addSelf(windSize)
-      .subSelf(textfield.size())
-      .multiplyScalar(0.5);
-  textfield.position(textfieldPos);
-  wind.add(radial);
-  wind.add(textfield);
-  wind.show();
-});
+function locationSuccess(position) {
+  var lat = position.coords.latitude;
+  var lon = position.coords.longitude;
+ 
+  main.body('Getting weather data..');
+  console.info('Got location:' + lat + ', ' + lon);
+  
+  ajax(
+    {
+      url: 'https://tuuleeko.fi/fmiproxy/nearest-observations?lat=' + lat + '&lon=' + lon + '&latest=true', 
+      type: 'json'
+    },
+    showObservation,
+    function(err) {
+      main.body('Failed to get weather data!');
+      console.warn('Failed to get weather data: ', err);
+    }
+  );  
+}
 
-main.on('click', 'down', function(e) {
-  var card = new UI.Card();
-  card.title('A Card');
-  card.subtitle('Is a Window');
-  card.body('The simplest window type in Pebble.js.');
-  card.show();
-});
+function showObservation(result) {
+  main.body(result.station.name + ' @ ' + new Date(result.observations.time).toLocaleTimeString('fi', {hour12: false}) + ':\n' + 
+            'Wind: ' + result.observations.windSpeedMs + 'm/s, ' + result.observations.windDir + '°T\n' +
+            'Gust: ' + result.observations.windGustMs + 'm/s\n' +
+            'Temp: ' + result.observations.temperature + '°C');
+  console.info('Got observation: ' + JSON.stringify(result));
+}
