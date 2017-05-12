@@ -38,9 +38,10 @@ function locationSuccess(position) {
 }
 
 function showObservation(result) {
-  main.body(result.station.name + ' @ ' + new Date(result.observations.time).toLocaleTimeString('fi', {hour12: false}) + ':\n' + 
+  main.body(result.station.name + ':\n' + 
             'Wind: ' + result.observations.windSpeedMs + 'm/s, ' + result.observations.windDir + '°T\n' +
             'Gust: ' + result.observations.windGustMs + 'm/s\n' +
-            'Temp: ' + result.observations.temperature + '°C');
+            'Temp: ' + result.observations.temperature + '°C\n' +
+            'Time: ' + new Date(result.observations.time).toLocaleTimeString('fi', {hour12: false}));
   console.info('Got observation: ' + JSON.stringify(result));
 }
